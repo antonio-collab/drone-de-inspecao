@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitor de Gás - IoT</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            background: #f0f2f5; 
+            margin: 0;
+            overflow: hidden;
+        }
+        .card { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            text-align: center; 
+            width: 320px; 
+            margin-top: 40px; 
+        }
+        .status { font-size: 3rem; font-weight: bold; margin: 1rem 0; }
+        .normal { color: #27ae60; }
+        .perigo { color: #e74c3c; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        h2 { color: #333; margin-bottom: 5px; }
+        #sensor-id { color: #777; font-size: 0.9rem; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Monitor de Gás</h2>
+        <p id="sensor-id">Aguardando Conexão...</p>
+        <div id="display" class="status normal">0</div>
+        <p id="msg-alerta">Ambiente Seguro</p>
+        <hr>
+        <small id="time">Sincronizando...</small>
+    </div>
+
+    <script>
+        async function atualizarDashboard() {
+            try {
+                // Certifique-se que sua API Node.js está rodando na porta 3000
+                const response = await fetch('http://localhost:3000/sensor/status');
+                const data = await response.json();
+
+                document.getElementById('sensor-id').innerText = `ID: ${data.sensor_id}`;
+                document.getElementById('display').innerText = data.gas_level;
+                document.getElementById('time').innerText = `Última atualização: ${data.timestamp || '--'}`;
+
+                const display = document.getElementById('display');
+                const msg = document.getElementById('msg-alerta');
+
+                if (data.alerta) {
+                    display.className = 'status perigo';
+                    msg.innerText = "⚠️ FUGA DE GÁS DETECTADA!";
+                    msg.style.color = "#e74c3c";
+                } else {
+                    display.className = 'status normal';
+                    msg.innerText = "Ambiente Seguro";
+                    msg.style.color = "#27ae60";
+                }
+            } catch (err) {
+                document.getElementById('msg-alerta').innerText = "Erro: API Offline";
+                document.getElementById('msg-alerta').style.color = "#999";
+            }
+        }
+
+        // Atualiza a interface a cada 2 segundos
+        setInterval(atualizarDashboard, 2000);
+        atualizarDashboard(); // Executa a primeira vez imediatamente
+    </script>
+</body>
+</html>
