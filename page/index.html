@@ -1,8 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard GásMar</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+  /* Estilos básicos para status */
+  .status-badge { padding: 5px 10px; border-radius: 5px; color: #fff; }
+  .status-alerta { background-color: red; }
+  .status-ok { background-color: green; }
+  #diagnostico-container { border: 2px solid #334155; padding: 10px; margin-bottom: 20px; }
+  #alerta-msg { display: none; color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div id="diagnostico-container">
+    <div>ID Sensor: <span id="sensor-id">--</span></div>
+    <div>Nível de Gás: <span id="gas-level">--</span></div>
+    <div id="status-texto">Carregando...</div>
+    <div id="status-chip" class="status-badge status-ok">SISTEMA OFFLINE</div>
+    <div id="alerta-msg">⚠️ Alerta de Gás Ativo!</div>
+</div>
+
+<canvas id="gasChart" height="200"></canvas>
+
+<script>
 const ctx = document.getElementById('gasChart').getContext('2d');
 let gasData = [];
 let labels = [];
 
-// Configuração do Gráfico Chart.js
+// Configuração do gráfico Chart.js
 const chart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -30,8 +60,8 @@ const chart = new Chart(ctx, {
 });
 
 // Função para atualizar elementos de status e gráfico
-function atualizarTela(data) {
-    const { sensor_id, gas_level, alerta } = data;
+function atualizarTela(dado) {
+    const { sensor_id, gas_level, alerta } = dado;
 
     const sensorIdEl = document.getElementById('sensor-id');
     const gasLevelEl = document.getElementById('gas-level');
@@ -40,11 +70,9 @@ function atualizarTela(data) {
     const chip = document.getElementById('status-chip');
     const msg = document.getElementById('alerta-msg');
 
-    // Atualiza dados básicos
     sensorIdEl.innerText = sensor_id;
     gasLevelEl.innerText = gas_level;
 
-    // Atualiza status e cores
     if (alerta) {
         chip.className = 'status-badge status-alerta';
         chip.innerText = '⚠️ ALERTA CRÍTICO';
@@ -65,9 +93,9 @@ function atualizarTela(data) {
         gasLevelEl.style.color = "var(--accent)";
     }
 
-    // Atualiza gráfico (mantendo últimos 20 pontos)
+    // Atualiza gráfico
     const now = new Date().toLocaleTimeString();
-    if (labels.length > 20) {
+    if (labels.length > 20) { // Mantém apenas os últimos 20 pontos
         labels.shift();
         gasData.shift();
     }
@@ -90,37 +118,14 @@ async function carregarUltimoEstado() {
 }
 
 // --- 2️⃣ Conecta WebSocket para dados MQTT em tempo real ---
-const socket = io('http://localhost:3000'); // Endereço do seu servidor Node.js
-socket.on('mqtt-dado', (data) => {
-    atualizarTela(data);
-});
-
-// --- 3️⃣ Função para baixar PDF ---
-document.getElementById('btn-download-pdf').addEventListener('click', async () => {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
-
-    // Título do PDF
-    pdf.setFontSize(18);
-    pdf.text("Relatório de Leitura de Gás - GásMar", 10, 20);
-
-    // Dados do sensor
-    const sensorId = document.getElementById('sensor-id').innerText;
-    const gasLevel = document.getElementById('gas-level').innerText;
-    const status = document.getElementById('status-texto').innerText;
-
-    pdf.setFontSize(12);
-    pdf.text(`Sensor ID: ${sensorId}`, 10, 40);
-    pdf.text(`Nível Atual (PPM): ${gasLevel}`, 10, 50);
-    pdf.text(`Status: ${status}`, 10, 60);
-
-    // Adiciona gráfico (convertendo canvas em imagem)
-    const canvas = document.getElementById('gasChart');
-    const imgData = canvas.toDataURL('image/png');
-    pdf.addImage(imgData, 'PNG', 10, 70, 180, 90);
-
-    pdf.save(`relatorio_gas_${new Date().toISOString().slice(0,10)}.pdf`);
+const socket = io('http://localhost:3000');
+socket.on('mqtt-dado', (dado) => {
+    atualizarTela(dado);
 });
 
 // Inicializa
 carregarUltimoEstado();
+</script>
+
+</body>
+</html>
