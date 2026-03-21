@@ -31,7 +31,7 @@ const chart = new Chart(ctx, {
 
 async function fetchData() {
     try {
-        const response = await fetch('http://localhost:3000/sensor/status');
+        const response = await fetch('http://localhost:3000/sensor/historico');
         const data = await response.json();
 
         // Referências dos elementos HTML
