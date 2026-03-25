@@ -1,0 +1,281 @@
+---
+
+# 🛡️ GásMar API – Monitoramento de Sensores de Gás
+
+API desenvolvida em **Node.js + Express + MQTT + SQLite** para coleta, armazenamento e visualização de dados de sensores de gás em tempo real.
+
+---
+
+## 🚀 Tecnologias utilizadas
+
+* Node.js
+* Express
+* SQLite
+* MQTT (Mosquitto)
+* Socket.io
+
+---
+
+## 📡 Fluxo da aplicação
+
+1. Sensores enviam dados via **MQTT**
+2. O backend:
+
+   * recebe os dados
+   * salva no banco SQLite
+   * envia em tempo real via WebSocket (Socket.io)
+3. O frontend (dashboard):
+
+   * recebe os dados
+   * exibe múltiplos sensores
+   * atualiza gráficos em tempo real
+
+---
+
+## 🔌 Configuração MQTT
+
+* **Broker:** `mqtt://localhost:1883`
+* **Tópico:**
+
+```bash
+gasmar/sensor/leitura
+```
+
+### 📥 Payload esperado:
+
+```json
+{
+  "sensor_id": "sensor_1",
+  "gas_level": 1200
+}
+```
+
+---
+
+## 🌐 Base URL
+
+```bash
+http://localhost:3000
+```
+
+---
+
+## 📚 Endpoints da API
+
+---
+
+### 🔹 1. Criar nova leitura
+
+Recebe dados do sensor (via HTTP ou interno pelo MQTT)
+
+```http
+POST /sensor/data
+```
+
+#### Body:
+
+```json
+{
+  "sensor_id": "sensor_1",
+  "gas_level": 1500
+}
+```
+
+#### Resposta:
+
+```json
+{
+  "sensor_id": "sensor_1",
+  "gas_level": 1500,
+  "alerta": false,
+  "timestamp": "12:30:10"
+}
+```
+
+---
+
+### 🔹 2. Obter último status
+
+Retorna o último dado recebido
+
+```http
+GET /sensor/status
+```
+
+#### Resposta:
+
+```json
+{
+  "sensor_id": "sensor_1",
+  "gas_level": 1800,
+  "alerta": false,
+  "timestamp": "12:32:45"
+}
+```
+
+---
+
+### 🔹 3. Histórico de leituras
+
+Retorna as últimas 50 leituras
+
+```http
+GET /sensor/historico
+```
+
+#### Resposta:
+
+```json
+[
+  {
+    "id": 1,
+    "sensor_id": "sensor_1",
+    "gas_level": 1200,
+    "alerta": 0,
+    "data_hora": "2026-03-24 12:30:00"
+  }
+]
+```
+
+---
+
+### 🔹 4. Atualizar leitura
+
+Atualiza uma leitura existente pelo ID
+
+```http
+PUT /sensor/update/:id
+```
+
+#### Exemplo:
+
+```http
+PUT /sensor/update/1
+```
+
+#### Body:
+
+```json
+{
+  "sensor_id": "sensor_1",
+  "gas_level": 2000
+}
+```
+
+---
+
+### 🔹 5. Deletar leitura
+
+Remove uma leitura do banco
+
+```http
+DELETE /sensor/delete/:id
+```
+
+#### Exemplo:
+
+```http
+DELETE /sensor/delete/1
+```
+
+---
+
+## ⚠️ Regras de negócio
+
+* Um alerta é disparado quando:
+
+```js
+gas_level > 400
+```
+
+* Status possíveis:
+
+  * ✅ Normal
+  * ⚠️ Alerta crítico
+
+---
+
+## 🔄 WebSocket (Tempo Real)
+
+A API envia dados em tempo real usando Socket.io.
+
+### Evento emitido:
+
+```js
+mqtt-dado
+```
+
+### Payload:
+
+```json
+{
+  "sensor_id": "sensor_1",
+  "gas_level": 1800,
+  "alerta": true
+}
+```
+
+---
+
+## 🧪 Testando o MQTT (Mosquitto)
+
+### Iniciar broker:
+
+```bash
+mosquitto
+```
+
+### Escutar mensagens:
+
+```bash
+mosquitto_sub -h localhost -t gasmar/sensor/leitura
+```
+
+### Enviar mensagem:
+
+```bash
+mosquitto_pub -h localhost -t gasmar/sensor/leitura -m "{\"sensor_id\":\"sensor_1\",\"gas_level\":1200}"
+```
+
+---
+
+## 📁 Estrutura do projeto
+
+```bash
+src/
+├── controllers/
+├── models/
+├── routes/
+├── config/
+└── server.js
+```
+
+---
+
+## ▶️ Como rodar o projeto
+
+```bash
+# instalar dependências
+npm install
+
+# iniciar servidor
+npm run dev
+```
+
+---
+
+## 💡 Melhorias futuras
+
+* Filtro por sensor (GET /sensor/:id)
+* Dashboard com gráfico individual por sensor
+* Autenticação (JWT)
+* Deploy em nuvem
+* Alertas via SMS/Email
+
+---
+
+## 👨‍💻 Autor
+
+Projeto desenvolvido para monitoramento industrial de gases.
+
+---
